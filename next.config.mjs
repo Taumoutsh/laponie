@@ -6,6 +6,8 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   // exceljs et Prisma restent des dépendances Node côté serveur.
   serverExternalPackages: ['exceljs', '@prisma/client'],
+  // L'app n'utilise pas next/image : on désactive l'optimiseur d'images (moins de surface d'attaque).
+  images: { unoptimized: true },
 };
 
 export default nextConfig;

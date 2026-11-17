@@ -81,7 +81,7 @@ Le service `backup` sauvegarde la base au démarrage puis toutes les `BACKUP_INT
 
 ```bash
 # sauvegarde immédiate (conseillé avant chaque mise à jour)
-docker compose exec backup sh /scripts/backup.sh once && docker compose up -d --build
+docker compose exec backup sh /scripts/backup.sh once && docker compose build --pull && docker compose up -d
 
 # lister les sauvegardes
 docker compose exec backup sh /scripts/backup.sh list
@@ -94,6 +94,15 @@ docker compose start app
 
 Avant chaque restauration, l'état actuel est sauvegardé dans un fichier `avant-restauration_…dump`, jamais supprimé automatiquement.
 Les fichiers sont au format `pg_dump` personnalisé (compressé). Pensez à copier aussi le dossier `backups` hors du serveur.
+
+## Sécurité des dépendances
+
+Dernière revue : novembre 2026.
+
+- **Next.js ≥ 15.5.29** : corrige les avis de sécurité de novembre 2026 (dont GHSA-pc58-hwjq-p385, GHSA-f3mh-rxg3-f5g2, GHSA-7qx7-33qx-rqx2) et embarque les correctifs React Server Components (CVE-2025-55182, CVE-2026-23864, CVE-2026-44907…). L'optimiseur d'images est désactivé (`images.unoptimized`), l'app n'en a pas besoin.
+- **React ≥ 19.2.8**, **Prisma ≥ 6.19.3** (dépendance `effect` corrigée).
+- **exceljs 4.4.0** n'est plus maintenu et fait l'objet de CVE publiées en 2026 sans correctif officiel (CVE-2026-78206 à 78209, CVE-2026-128338…). Elles concernent la **lecture** de fichiers, les notes de cellule, les images, les tableaux et le CSV : Laponie ne fait qu'**écrire** un classeur à partir de ses propres données, sans aucune de ces fonctions, et n'est donc pas exposée. Sa dépendance `uuid` est forcée en version corrigée (`overrides`, CVE-2026-41907).
+- Pour récupérer les correctifs des images Docker (Node, PostgreSQL) : `docker compose build --pull`.
 
 ## Développement local
 
