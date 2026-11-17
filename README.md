@@ -49,6 +49,30 @@ Application web utilisable sur téléphone et ordinateur, installable comme une 
    docker compose exec app npm run db:seed
    ```
 
+### Base d'essai (vérifier tous les affichages)
+
+`prisma/test-data.sql` **efface toutes les données** puis charge un jeu d'essai complet :
+
+```bash
+docker compose exec -T db psql -U laponie -d laponie -v ON_ERROR_STOP=1 < prisma/test-data.sql
+```
+
+Il contient 14 personnes, 4 familles, 3 couples (50/50, 60/40, comptes séparés) et 4 événements :
+
+| Où regarder | Cas couverts |
+| --- | --- |
+| **Noël 2026** – vue par famille | famille incomplète (Bernard, Noé absent), plafond reçu dépassé (Léa), proche du plafond (Hugo, Jeanne), plafond de dépense dépassé (Sophie, Camille), personne sans plafond de dépense, « Sans famille » |
+| Cadeaux | les 5 statuts, sur place / à distance, livraisons à venir et passées, 2 et 3 destinataires, cadeau sans participation, prix à 0 €, sous-financé (Vélo), sur-financé (Jeu de société → « réduire au prorata »), lien et note |
+| Fiche cadeau | Console Switch 2 (avance + remboursement + historique), Vélo d'appartement (deux payeurs, avance non couverte), Lego Technic (couple en comptes séparés) |
+| Nouveau cadeau | taper « console switch » pour Hugo (doublons), « Mario Kart » pour Hugo ou « livre de cuisine » pour Jeanne (déjà offert en 2025) |
+| Balances | remboursements total et partiels, simplification, interrupteur « compte commun » |
+| Familles & couples | suggestion de couple (Luc & Emma Petit) |
+| **Noël 2025** | événement archivé |
+| **Les 90 ans de Jeanne** | participants sans aucun cadeau (états vides) |
+| **Anniversaire de Léa** | événement sans participant |
+
+`npm run db:seed` charge plutôt une petite démo, uniquement si la base est vide.
+
 ### Sauvegarde
 
 ```bash
