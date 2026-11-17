@@ -35,15 +35,16 @@ Application web utilisable sur téléphone et ordinateur, installable comme une 
 
    Les migrations de la base sont appliquées automatiquement au démarrage du conteneur.
 
-3. Dans Nginx Proxy Manager, créer un *Proxy Host* :
-   - Forward Hostname / IP : `laponie`
-   - Forward Port : `3000`
+3. L'application répond sur **http://<serveur>:6104** (port réglable avec `APP_PORT` dans `.env`).
+
+4. Dans Nginx Proxy Manager, créer un *Proxy Host* :
+   - Forward Hostname / IP : `laponie` (via le réseau NPM, port `3000`),
+     ou l'IP du serveur avec le port `6104` ;
    - Activer le certificat SSL (Let's Encrypt) et « Force SSL ».
 
-   Le conteneur n'expose aucun port sur l'hôte : il n'est joignable que via le réseau de NPM.
-   La base PostgreSQL reste sur un réseau interne.
+   La base PostgreSQL reste sur un réseau interne, jamais exposée.
 
-4. (Optionnel) Charger des données de démonstration dans une base vide :
+5. (Optionnel) Charger des données de démonstration dans une base vide :
 
    ```bash
    docker compose exec app npm run db:seed
