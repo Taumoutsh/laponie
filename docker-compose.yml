@@ -1,0 +1,51 @@
+name: laponie
+
+services:
+  app:
+    build: .
+    image: laponie:latest
+    container_name: laponie
+    restart: unless-stopped
+    environment:
+      APP_PASSWORD: ${APP_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:?Définir SESSION_SECRET dans .env}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-laponie}:${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}@db:5432/${POSTGRES_DB:-laponie}?schema=public
+      TZ: Europe/Paris
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+      - npm
+
+  db:
+    image: postgres:16-alpine
+    container_name: laponie-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-laponie}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:-laponie}
+      TZ: Europe/Paris
+    volumes:
+      - laponie-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+networks:
+  # Réseau privé app <-> base, jamais exposé au proxy.
+  internal:
+  # Réseau de Nginx Proxy Manager (doit déjà exister).
+  npm:
+    external: true
+    name: ${NPM_NETWORK:-npm_default}
+
+volumes:
+  laponie-db:

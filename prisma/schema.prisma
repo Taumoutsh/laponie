@@ -1,0 +1,207 @@
+// Laponie — modèle de données.
+// Tous les montants sont stockés en centimes d'euro (entiers).
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GiftStatus {
+  IDEA
+  FOUND
+  BOUGHT
+  RECEIVED
+  WRAPPED
+}
+
+enum PurchaseMode {
+  ON_SITE
+  REMOTE
+}
+
+/// Famille du carnet (commune à tous les événements).
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  members   Person[]
+}
+
+/// Personne du carnet (commune à tous les événements).
+model Person {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String   @default("")
+  birthYear Int?
+  color     String   @default("gray")
+  note      String?
+  familyId  String?
+  family    Family?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  coupleAsA      Couple?            @relation("CoupleA")
+  coupleAsB      Couple?            @relation("CoupleB")
+  participations EventParticipant[]
+  recipientOf    GiftRecipient[]
+  contributions  Contribution[]
+  advances       Advance[]
+  repaymentsFrom Repayment[]        @relation("RepaymentFromPerson")
+  repaymentsTo   Repayment[]        @relation("RepaymentToPerson")
+
+  @@index([familyId])
+}
+
+/// Couple : deux personnes qui participent ensemble et partagent leurs dépenses.
+model Couple {
+  id            String   @id @default(cuid())
+  personAId     String   @unique
+  personBId     String   @unique
+  /// Part (en %) de la personne A dans les dépenses communes.
+  splitA        Int      @default(50)
+  /// Compte commun : avances et dettes regroupées dans les balances.
+  sharedAccount Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  personA        Person         @relation("CoupleA", fields: [personAId], references: [id], onDelete: Cascade)
+  personB        Person         @relation("CoupleB", fields: [personBId], references: [id], onDelete: Cascade)
+  contributions  Contribution[]
+  repaymentsFrom Repayment[]    @relation("RepaymentFromCouple")
+  repaymentsTo   Repayment[]    @relation("RepaymentToCouple")
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  archived  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  participants EventParticipant[]
+  gifts        Gift[]
+  repayments   Repayment[]
+}
+
+/// Présence d'une personne dans un événement, avec ses plafonds.
+model EventParticipant {
+  id              String @id @default(cuid())
+  eventId         String
+  personId        String
+  /// Plafond de ce qu'on offre à cette personne.
+  receiveMaxCents Int?
+  /// Plafond (optionnel) de ce que cette personne dépense.
+  spendMaxCents   Int?
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, personId])
+  @@index([personId])
+}
+
+model Gift {
+  id           String       @id @default(cuid())
+  eventId      String
+  name         String
+  url          String?
+  priceCents   Int          @default(0)
+  status       GiftStatus   @default(IDEA)
+  purchaseMode PurchaseMode @default(REMOTE)
+  deliveryDate DateTime?
+  note         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  event         Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  recipients    GiftRecipient[]
+  contributions Contribution[]
+  advances      Advance[]
+  logs          GiftLog[]
+
+  @@index([eventId])
+}
+
+model GiftRecipient {
+  giftId   String
+  personId String
+
+  gift   Gift   @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Restrict)
+
+  @@id([giftId, personId])
+  @@index([personId])
+}
+
+/// Participation d'une personne OU d'un couple à un cadeau.
+model Contribution {
+  id          String   @id @default(cuid())
+  giftId      String
+  personId    String?
+  coupleId    String?
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  gift   Gift    @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  person Person? @relation(fields: [personId], references: [id], onDelete: Restrict)
+  couple Couple? @relation(fields: [coupleId], references: [id], onDelete: Restrict)
+
+  @@index([giftId])
+  @@index([personId])
+  @@index([coupleId])
+}
+
+/// Avance : quelqu'un a payé tout ou partie du cadeau pour les autres.
+model Advance {
+  id          String   @id @default(cuid())
+  giftId      String
+  payerId     String
+  amountCents Int
+  paidAt      DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+
+  gift  Gift   @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  payer Person @relation(fields: [payerId], references: [id], onDelete: Restrict)
+
+  @@index([giftId])
+  @@index([payerId])
+}
+
+/// Remboursement d'une personne/couple à une autre personne/couple.
+model Repayment {
+  id           String   @id @default(cuid())
+  eventId      String
+  fromPersonId String?
+  fromCoupleId String?
+  toPersonId   String?
+  toCoupleId   String?
+  amountCents  Int
+  paidAt       DateTime @default(now())
+  note         String?
+  createdAt    DateTime @default(now())
+
+  event      Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fromPerson Person? @relation("RepaymentFromPerson", fields: [fromPersonId], references: [id], onDelete: Restrict)
+  fromCouple Couple? @relation("RepaymentFromCouple", fields: [fromCoupleId], references: [id], onDelete: Restrict)
+  toPerson   Person? @relation("RepaymentToPerson", fields: [toPersonId], references: [id], onDelete: Restrict)
+  toCouple   Couple? @relation("RepaymentToCouple", fields: [toCoupleId], references: [id], onDelete: Restrict)
+
+  @@index([eventId])
+}
+
+/// Historique des modifications d'un cadeau.
+model GiftLog {
+  id        String   @id @default(cuid())
+  giftId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  gift Gift @relation(fields: [giftId], references: [id], onDelete: Cascade)
+
+  @@index([giftId])
+}
