@@ -66,3 +66,16 @@
     @apply transition-colors hover:bg-soft;
   }
 }
+
+/*
+ * Safari sur iPhone zoome automatiquement quand on touche un champ dont le texte
+ * fait moins de 16 px. Sur mobile, tous les champs passent donc à 16 px.
+ * Le zoom manuel (pincer) reste possible, pour l'accessibilité.
+ */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
