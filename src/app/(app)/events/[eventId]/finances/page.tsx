@@ -138,7 +138,7 @@ export default async function FinancesPage({
         <Section title="Dépensé et reçu par personne">
           <p className="-mt-1 mb-2 text-xs text-muted">Dépensé = participations seules + part des participations du couple.</p>
           <div className="overflow-hidden rounded-[10px] border border-line">
-            <div className="grid grid-cols-[minmax(0,1fr)_96px_96px_80px] gap-2.5 bg-soft px-3 py-2 text-xs font-medium text-muted">
+            <div className="hidden gap-2.5 bg-soft px-3 py-2 text-xs font-medium text-muted sm:grid sm:grid-cols-[minmax(0,1fr)_96px_96px_80px]">
               <span>Personne</span>
               <span className="text-right">Dépensé</span>
               <span className="text-right">Reçu</span>
@@ -150,21 +150,26 @@ export default async function FinancesPage({
                 <Link
                   key={s.personId}
                   href={`/events/${eventId}/people/${s.personId}`}
-                  className="row-link grid grid-cols-[minmax(0,1fr)_96px_96px_80px] items-center gap-2.5 border-t border-line2 px-3 py-2 tabular"
+                  className="row-link grid grid-cols-3 items-center gap-x-2.5 gap-y-1.5 border-t border-line2 px-3 py-2.5 tabular first-of-type:border-t-0 sm:grid-cols-[minmax(0,1fr)_96px_96px_80px] sm:py-2 sm:first-of-type:border-t"
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="col-span-3 flex min-w-0 items-center gap-2 sm:col-span-1">
                     <Avatar initials={dir.initials(s.personId)} color={dir.person(s.personId)?.color} size={22} />
                     <span className="truncate">{dir.personName(s.personId)}</span>
                   </span>
-                  <span className={`text-right font-semibold ${s.overSpendCents > 0 ? 'text-danger' : 'text-credit'}`}>
+                  <span className={`font-semibold sm:text-right ${s.overSpendCents > 0 ? 'text-danger' : 'text-credit'}`}>
+                    <span className="block text-[11px] font-normal text-muted sm:hidden">Dépensé</span>
                     {formatEUR(s.spentCents)}
                     <span className="block text-[11px] font-normal text-muted">{s.spendMaxCents != null ? `max ${formatEUR(s.spendMaxCents)}` : 'sans plafond'}</span>
                   </span>
-                  <span className={`text-right font-semibold ${s.overReceiveCents > 0 ? 'text-danger' : 'text-[#A55A12]'}`}>
+                  <span className={`font-semibold sm:text-right ${s.overReceiveCents > 0 ? 'text-danger' : 'text-[#A55A12]'}`}>
+                    <span className="block text-[11px] font-normal text-muted sm:hidden">Reçu</span>
                     {formatEUR(s.receivedCents)}
                     <span className="block text-[11px] font-normal text-muted">{s.receiveMaxCents != null ? `max ${formatEUR(s.receiveMaxCents)}` : 'sans plafond'}</span>
                   </span>
-                  <span className="text-right text-muted">{formatEUR(diff, { sign: true })}</span>
+                  <span className="self-start text-right text-muted sm:self-auto">
+                    <span className="block text-[11px] sm:hidden">Écart</span>
+                    {formatEUR(diff, { sign: true })}
+                  </span>
                 </Link>
               );
             })}
@@ -249,9 +254,32 @@ export default async function FinancesPage({
             Les participations s’ajoutent depuis la fiche de chaque cadeau.
           </Empty>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[680px]">
-              <div className="grid grid-cols-[190px_150px_minmax(0,1fr)_110px_100px] gap-3 px-3 py-2 text-xs font-medium text-muted">
+          <>
+          {/* Mobile : une carte par participation */}
+          <ul className="flex flex-col gap-2 md:hidden">
+            {ledger.map(({ c, g }) => (
+              <li key={c.id}>
+                <Link href={`/events/${eventId}/gifts/${g.id}`} className="card row-link block px-3.5 py-3">
+                  <div className="flex items-start gap-2">
+                    <span className="min-w-0 flex-1 font-semibold">{g.name}</span>
+                    <span className="shrink-0 font-semibold tabular">{formatEUR(c.amountCents, { forceCents: true })}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[#5F5E5B]">
+                    <span>
+                      {dir.partyName(c)} → {recipientsLabel(dir, g.recipientIds)}
+                    </span>
+                    <span className="tag" style={{ background: STATUS_STYLE[g.status].bg, color: STATUS_STYLE[g.status].fg }}>
+                      {STATUS_LABEL[g.status]}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+            <li className="flex justify-end px-1 pt-1 font-bold tabular">{formatEUR(sum(ledger.map((x) => x.c.amountCents)))}</li>
+          </ul>
+          <div className="hidden md:block">
+            <div>
+              <div className="grid grid-cols-[170px_140px_minmax(140px,1fr)_110px_100px] gap-3 px-3 py-2 text-xs font-medium text-muted">
                 <span>Payé par</span>
                 <span>Pour</span>
                 <span>Cadeau</span>
@@ -262,7 +290,7 @@ export default async function FinancesPage({
                 <Link
                   key={c.id}
                   href={`/events/${eventId}/gifts/${g.id}`}
-                  className="row-link grid grid-cols-[190px_150px_minmax(0,1fr)_110px_100px] items-center gap-3 border-t border-line2 px-3 py-2"
+                  className="row-link grid grid-cols-[170px_140px_minmax(140px,1fr)_110px_100px] items-center gap-3 border-t border-line2 px-3 py-2"
                 >
                   <span className="truncate font-medium">{dir.partyName(c)}</span>
                   <span className="truncate text-[#5F5E5B]">{recipientsLabel(dir, g.recipientIds)}</span>
@@ -280,6 +308,7 @@ export default async function FinancesPage({
               </div>
             </div>
           </div>
+          </>
         )}
       </Section>
     </Page>

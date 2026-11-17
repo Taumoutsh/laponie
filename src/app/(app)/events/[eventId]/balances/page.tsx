@@ -186,9 +186,41 @@ export default async function BalancesPage({
 
       {b.lines.length > 0 ? (
         <Section className="mt-9" title="Origine des dettes, cadeau par cadeau">
-          <div className="overflow-x-auto">
-            <div className="min-w-[760px]">
-              <div className="grid grid-cols-[minmax(0,1fr)_160px_160px_84px_90px_84px_110px] gap-3 px-3 py-2 text-xs font-medium text-muted">
+          {/* Mobile : une carte par dette */}
+          <ul className="flex flex-col gap-2 md:hidden">
+            {b.lines.map((l, i) => (
+              <li key={i}>
+                <Link href={`/events/${eventId}/gifts/${l.giftId}`} className="card row-link block px-3.5 py-3 tabular">
+                  <div className="flex items-start gap-2">
+                    <span className="min-w-0 flex-1 font-semibold">{giftName.get(l.giftId)}</span>
+                    <span className={`tag shrink-0 ${l.remainingCents === 0 ? 'bg-[#E3F1E9] text-[#1F6B45]' : 'bg-debt-bg text-debt-text'}`}>
+                      {l.remainingCents === 0 ? 'Remboursé' : 'En attente'}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[13px] text-[#5F5E5B]">
+                    {label(l.debtor)} doit à <span className="text-credit-text">{label(l.creditor)}</span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-[13px]">
+                    <span>
+                      <span className="block text-[11px] text-muted">Part</span>
+                      {formatEUR(l.amountCents)}
+                    </span>
+                    <span className="text-[#1F6B45]">
+                      <span className="block text-[11px] text-muted">Remboursé</span>
+                      {l.repaidCents ? formatEUR(l.repaidCents) : '—'}
+                    </span>
+                    <span className="font-semibold">
+                      <span className="block text-[11px] font-normal text-muted">Reste</span>
+                      {formatEUR(l.remainingCents)}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
+            <div>
+              <div className="grid grid-cols-[minmax(140px,1fr)_150px_150px_84px_90px_84px_110px] gap-3 px-3 py-2 text-xs font-medium text-muted">
                 <span>Cadeau</span>
                 <span>Avancé par</span>
                 <span>Doit</span>
@@ -201,7 +233,7 @@ export default async function BalancesPage({
                 <Link
                   key={i}
                   href={`/events/${eventId}/gifts/${l.giftId}`}
-                  className="row-link grid grid-cols-[minmax(0,1fr)_160px_160px_84px_90px_84px_110px] items-center gap-3 border-t border-line2 px-3 py-2 tabular"
+                  className="row-link grid grid-cols-[minmax(140px,1fr)_150px_150px_84px_90px_84px_110px] items-center gap-3 border-t border-line2 px-3 py-2 tabular"
                 >
                   <span className="truncate font-medium">{giftName.get(l.giftId)}</span>
                   <span className="truncate text-credit-text">{label(l.creditor)}</span>

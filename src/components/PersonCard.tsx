@@ -54,7 +54,7 @@ export function PersonCard({ eventId, personId, dir, stats }: { eventId: string;
           <OverChip cents={stats.overSpendCents} />
         </span>
       </div>
-      <Meter value={stats.spentCents} max={stats.spendMaxCents} height={3} className="mt-1.5" />
+      <Meter value={stats.spentCents} max={stats.spendMaxCents} height={5} className="mt-1.5" />
 
       <div className="mt-3 flex items-center gap-2 text-xs text-muted">
         <Icon name="gift" size={13} />

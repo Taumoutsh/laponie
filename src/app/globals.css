@@ -43,7 +43,7 @@
     @apply rounded-[10px] border border-line bg-white;
   }
   .tag {
-    @apply inline-flex h-[22px] items-center gap-1.5 rounded px-2 text-xs font-medium;
+    @apply inline-flex min-h-[22px] max-w-full items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium leading-tight;
   }
   .section-title {
     @apply text-[17px] font-semibold;
