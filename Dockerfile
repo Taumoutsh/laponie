@@ -24,7 +24,7 @@ RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=6104 \
     HOSTNAME=0.0.0.0
 
 RUN addgroup -S laponie && adduser -S laponie -G laponie
@@ -37,5 +37,5 @@ COPY --chown=laponie:laponie docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
 USER laponie
-EXPOSE 3000
+EXPOSE 6104
 ENTRYPOINT ["./docker-entrypoint.sh"]

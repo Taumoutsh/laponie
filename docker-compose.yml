@@ -10,10 +10,11 @@ services:
       APP_PASSWORD: ${APP_PASSWORD:-}
       SESSION_SECRET: ${SESSION_SECRET:?Définir SESSION_SECRET dans .env}
       DATABASE_URL: postgresql://${POSTGRES_USER:-laponie}:${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}@db:5432/${POSTGRES_DB:-laponie}?schema=public
+      PORT: ${APP_PORT:-6104}
       TZ: Europe/Paris
-    ports:
-      # Port de l'hôte → port 3000 du conteneur
-      - "${APP_PORT:-6104}:3000"
+    # Aucun port publié sur l'hôte : Nginx Proxy Manager joint « laponie:6104 » par son réseau.
+    expose:
+      - "${APP_PORT:-6104}"
     depends_on:
       db:
         condition: service_healthy
