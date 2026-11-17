@@ -9,3 +9,5 @@ npm-debug.log*
 Dockerfile
 docker-compose.yml
 README.md
+backups
+scripts

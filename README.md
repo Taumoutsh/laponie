@@ -73,11 +73,28 @@ Il contient 14 personnes, 4 familles, 3 couples (50/50, 60/40, comptes séparés
 
 `npm run db:seed` charge plutôt une petite démo, uniquement si la base est vide.
 
-### Sauvegarde
+### Sauvegardes
+
+Les commandes `docker compose build`, `up -d --build` et `down` **ne touchent pas** aux données : elles sont dans le volume Docker `laponie-db`.
+Seuls `docker compose down -v`, `docker volume rm` et `docker volume prune` / `docker system prune --volumes` (pile arrêtée) peuvent l'effacer.
+
+Le service `backup` sauvegarde la base au démarrage puis toutes les `BACKUP_INTERVAL_HOURS` heures (24 par défaut) dans `BACKUP_PATH` (`./backups` par défaut), et ne garde que les `BACKUP_KEEP` plus récentes (14 par défaut).
 
 ```bash
-docker compose exec db pg_dump -U laponie laponie > laponie-$(date +%F).sql
+# sauvegarde immédiate (conseillé avant chaque mise à jour)
+docker compose exec backup sh /scripts/backup.sh once && docker compose up -d --build
+
+# lister les sauvegardes
+docker compose exec backup sh /scripts/backup.sh list
+
+# restaurer la plus récente (ou un fichier précis) — remplace toutes les données actuelles
+docker compose stop app
+docker compose exec backup sh /scripts/restore.sh latest
+docker compose start app
 ```
+
+Avant chaque restauration, l'état actuel est sauvegardé dans un fichier `avant-restauration_…dump`, jamais supprimé automatiquement.
+Les fichiers sont au format `pg_dump` personnalisé (compressé). Pensez à copier aussi le dossier `backups` hors du serveur.
 
 ## Développement local
 

@@ -39,6 +39,29 @@ services:
     networks:
       - internal
 
+  # Sauvegardes automatiques de la base, avec rotation (voir README).
+  backup:
+    image: postgres:16-alpine
+    container_name: laponie-backup
+    restart: unless-stopped
+    entrypoint: ["sh", "/scripts/backup.sh", "loop"]
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-laponie}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}
+      PGDATABASE: ${POSTGRES_DB:-laponie}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      TZ: Europe/Paris
+    volumes:
+      - ${BACKUP_PATH:-./backups}:/backups
+      - ./scripts:/scripts:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
 networks:
   # Réseau privé app <-> base, jamais exposé au proxy.
   internal:
