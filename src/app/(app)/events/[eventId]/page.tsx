@@ -35,6 +35,10 @@ export default async function EventPage({ params }: { params: Promise<{ eventId:
         <Icon name="userPlus" size={15} />
         Participants
       </Link>
+      <Link href={`/events/${eventId}/settings`} className="btn" aria-label="Réglages de l’événement (modifier, archiver, supprimer)">
+        <Icon name="settings" size={15} />
+        <span className="md:hidden">Réglages</span>
+      </Link>
       <Link href={`/events/${eventId}/gifts/new`} className="btn-primary">
         <Icon name="plus" size={15} strokeWidth={2.2} />
         Nouveau cadeau
