@@ -74,7 +74,7 @@ Il contient 14 personnes, 4 familles, 3 couples (50/50, 60/40, comptes séparés
 
 ### Sauvegardes
 
-Les commandes `docker compose build`, `up -d --build` et `down` **ne touchent pas** aux données : elles sont dans le volume Docker `laponie-db`.
+Les commandes `docker compose build`, `up -d --build` et `down` **ne touchent pas** aux données : elles sont dans le volume Docker `laponie-pgdata` (PostgreSQL 18).
 Seuls `docker compose down -v`, `docker volume rm` et `docker volume prune` / `docker system prune --volumes` (pile arrêtée) peuvent l'effacer.
 
 Le service `backup` sauvegarde la base au démarrage puis toutes les `BACKUP_INTERVAL_HOURS` heures (24 par défaut) dans `BACKUP_PATH` (`./backups` par défaut), et ne garde que les `BACKUP_KEEP` plus récentes (14 par défaut).
@@ -121,7 +121,7 @@ Pensez à committer le `package-lock.json` généré par le premier `npm install
 ## Architecture
 
 - Next.js 15 (App Router, Server Components, Server Actions), React 19, TypeScript strict, Tailwind CSS.
-- PostgreSQL via Prisma (`prisma/schema.prisma`) ; montants stockés en centimes.
+- PostgreSQL 18 via Prisma (`prisma/schema.prisma`) ; montants stockés en centimes.
 - Logique métier pure et testée dans `src/lib/domain/` :
   - `status.ts` : statuts et pourcentages (à distance : 0/25/50/75/100 ; sur place : 0/33/67/100),
   - `budget.ts` : reçu (parts égales), dépensé (seul + part du couple), plafonds, groupes de familles,
