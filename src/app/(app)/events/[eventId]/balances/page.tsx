@@ -67,7 +67,7 @@ export default async function BalancesPage({
         </Link>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
         <StatCard label="Avances" value={<span className="text-credit-text">{formatEUR(b.totalAdvancedCents)}</span>} hint={`sur ${data.gifts.filter((g) => g.advances.length).length} cadeau(x)`} />
         <StatCard label="Déjà remboursé" value={<span className="text-[#1F6B45]">{formatEUR(b.totalRepaidCents)}</span>} hint={`${data.repayments.length} remboursement(s) enregistré(s)`} />
         <StatCard label="Reste à rembourser" value={<span className="text-debt-text">{formatEUR(b.outstandingCents)}</span>} hint={`${b.pairwise.length} dette(s) entre comptes`} />
@@ -104,7 +104,7 @@ export default async function BalancesPage({
           </Empty>
         </div>
       ) : (
-        <div className="mt-9 grid items-start gap-7 lg:grid-cols-2">
+        <div className="mt-9 grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
           <Section title="Solde par compte">
             <div className="flex justify-between text-xs font-semibold">
               <span className="text-debt-text">← doit de l’argent</span>
@@ -253,7 +253,7 @@ export default async function BalancesPage({
         </Section>
       ) : null}
 
-      <div className="mt-9 grid items-start gap-7 lg:grid-cols-2">
+      <div className="mt-9 grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
         <Section title="Remboursements enregistrés" count={data.repayments.length}>
           {data.repayments.length === 0 ? (
             <p className="text-[13px] text-muted">Aucun remboursement enregistré.</p>
@@ -287,7 +287,7 @@ export default async function BalancesPage({
           {accountOptions.length < 2 ? (
             <p className="text-[13px] text-muted">Il faut au moins deux comptes dans l’événement.</p>
           ) : (
-            <ActionForm action={addRepayment.bind(null, eventId)} resetOnSuccess className="grid gap-3 sm:grid-cols-2">
+            <ActionForm action={addRepayment.bind(null, eventId)} resetOnSuccess className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <label htmlFor="rp-from" className="label">
                   Qui rembourse

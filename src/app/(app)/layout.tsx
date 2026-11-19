@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen md:flex">
       <Sidebar events={events} personCount={personCount} authEnabled={authEnabled()} />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-x-clip">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b border-line2 bg-white/95 px-3 backdrop-blur md:hidden">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-pine text-white">

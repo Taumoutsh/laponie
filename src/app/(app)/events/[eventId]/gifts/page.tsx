@@ -120,7 +120,7 @@ export default async function GiftsPage({
       <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
         <nav
           aria-label="Filtrer par statut (plusieurs choix possibles)"
-          className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 md:mx-0 md:flex-wrap md:px-0"
+          className="flex w-full min-w-0 max-w-full gap-1.5 overflow-x-auto pb-0.5 md:w-auto md:flex-wrap"
         >
           <Link
             href={href({ statuses: [] })}
