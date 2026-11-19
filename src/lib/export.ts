@@ -49,6 +49,25 @@ export async function buildWorkbook(view: EventView, opts: ExportOptions): Promi
 
   // ---------- Colonnes « payeurs » ----------
   const participantOrder = familyGroups.flatMap((g) => g.memberIds);
+
+  // groupes de lignes
+  let rowGroups: { label: string; personIds: string[] }[];
+  if (opts.group === 'family') {
+    rowGroups = familyGroups.map((g) => ({ label: g.name, personIds: g.memberIds }));
+  } else if (opts.group === 'couple') {
+    const seen = new Set<string>();
+    rowGroups = [];
+    for (const pid of participantOrder) {
+      if (seen.has(pid)) continue;
+      const c = dir.coupleOf(pid);
+      const members = c ? [c.personAId, c.personBId].filter((id) => view.participantIds.has(id)) : [pid];
+      members.forEach((id) => seen.add(id));
+      rowGroups.push({ label: c && members.length > 1 ? dir.coupleFullName(c.id) : dir.personName(pid), personIds: members });
+    }
+  } else {
+    rowGroups = participantOrder.map((pid) => ({ label: dir.personName(pid), personIds: [pid] }));
+  }
+
   type Col = { key: string; label: string };
   const cols: Col[] = [];
   if (opts.coupleMode === 'column') {
@@ -61,7 +80,8 @@ export async function buildWorkbook(view: EventView, opts: ExportOptions): Promi
       }
     }
   }
-  for (const pid of participantOrder) cols.push({ key: 'p:' + pid, label: dir.personName(pid) });
+  // Colonnes dans l'ordre des groupes de lignes : membres d'un même groupe côte à côte.
+  for (const pid of rowGroups.flatMap((g) => g.personIds)) cols.push({ key: 'p:' + pid, label: dir.personName(pid) });
   const colIndex = new Map(cols.map((c, i) => [c.key, i]));
 
   const giftValues = (g: DGift): number[] => {
@@ -104,24 +124,6 @@ export async function buildWorkbook(view: EventView, opts: ExportOptions): Promi
   }
   const nCols = headers.length;
   const valueSlice = (v: number[]) => (hasOthers ? v : v.slice(0, cols.length));
-
-  // groupes de lignes
-  let rowGroups: { label: string; personIds: string[] }[];
-  if (opts.group === 'family') {
-    rowGroups = familyGroups.map((g) => ({ label: g.name, personIds: g.memberIds }));
-  } else if (opts.group === 'couple') {
-    const seen = new Set<string>();
-    rowGroups = [];
-    for (const pid of participantOrder) {
-      if (seen.has(pid)) continue;
-      const c = dir.coupleOf(pid);
-      const members = c ? [c.personAId, c.personBId].filter((id) => view.participantIds.has(id)) : [pid];
-      members.forEach((id) => seen.add(id));
-      rowGroups.push({ label: c && members.length > 1 ? dir.coupleFullName(c.id) : dir.personName(pid), personIds: members });
-    }
-  } else {
-    rowGroups = participantOrder.map((pid) => ({ label: dir.personName(pid), personIds: [pid] }));
-  }
 
   const blanks = (n: number) => new Array(n).fill('') as string[];
   for (const grp of rowGroups) {
@@ -182,6 +184,72 @@ export async function buildWorkbook(view: EventView, opts: ExportOptions): Promi
     }
     ws.addRow([]);
   }
+  // ---------- Totaux en bas de la feuille 1 ----------
+  const sumCents = (v: number[]) => v.reduce((a, b) => a + b, 0);
+  const totals = new Array(cols.length + 1).fill(0) as number[];
+  for (const g of data.gifts) giftValues(g).forEach((v, i) => (totals[i] += v));
+  const globalCents = sumCents(totals);
+  const firstPayerCol = fixed.length + 1;
+  const othersCol = firstPayerCol + cols.length;
+
+  /** Ce qu'une personne a donné, parts de couple incluses quand les couples ont leur propre colonne. */
+  const personPaid = (pid: string) => {
+    let cents = totals[colIndex.get('p:' + pid)!] ?? 0;
+    const c = dir.coupleOf(pid);
+    const ci = c ? colIndex.get('c:' + c.id) : undefined;
+    if (c && ci !== undefined) {
+      cents += dir.partyPersonShares({ personId: null, coupleId: c.id }, totals[ci]).find((x) => x.personId === pid)?.cents ?? 0;
+    }
+    return cents;
+  };
+
+  const perPerson = ws.addRow([
+    opts.coupleMode === 'column' ? 'Total par payeur' : 'Total par personne',
+    ...blanks(fixed.length - 1),
+    ...valueSlice(totals).map(euros),
+    euros(globalCents),
+  ]);
+  styleRow(perPerson, nCols, FILL_GROUP);
+
+  if (opts.group === 'family' || opts.group === 'couple') {
+    const word = opts.group === 'family' ? 'famille' : 'couple';
+    const namesRow = ws.addRow([opts.group === 'family' ? 'Famille' : 'Couple', ...blanks(nCols - 1)]);
+    const groupRow = ws.addRow([
+      opts.coupleMode === 'column' ? `Total par ${word} (parts de couple incluses)` : `Total par ${word}`,
+      ...blanks(nCols - 1),
+    ]);
+    styleRow(namesRow, nCols, FILL_PERSON);
+    styleRow(groupRow, nCols, FILL_GROUP);
+    for (const grp of rowGroups) {
+      const indexes = grp.personIds.map((id) => colIndex.get('p:' + id)!).sort((a, b) => a - b);
+      const from = firstPayerCol + indexes[0];
+      const to = firstPayerCol + indexes[indexes.length - 1];
+      namesRow.getCell(from).value = grp.label;
+      groupRow.getCell(from).value = sumCents(grp.personIds.map(personPaid)) / 100;
+      groupRow.getCell(from).numFmt = EUR;
+      if (to > from) {
+        ws.mergeCells(namesRow.number, from, namesRow.number, to);
+        ws.mergeCells(groupRow.number, from, groupRow.number, to);
+      }
+      namesRow.getCell(from).alignment = { horizontal: 'center' };
+      groupRow.getCell(from).alignment = { horizontal: 'center' };
+    }
+    if (hasOthers) groupRow.getCell(othersCol).value = euros(totals[cols.length]);
+    groupRow.getCell(nCols).value = euros(globalCents);
+  }
+
+  const priceCents = sumCents(data.gifts.map((g) => g.priceCents));
+  const missing = priceCents - globalCents;
+  const globalCells: (string | number | null)[] = [
+    missing > 0 ? `Total global (reste à financer : ${(missing / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €)` : 'Total global',
+    ...blanks(fixed.length - 1),
+  ];
+  if (opts.colAdvance) globalCells[fixed.length - 2] = euros(sumCents(data.gifts.flatMap((g) => g.advances.map((a) => a.amountCents))));
+  globalCells[fixed.length - 1] = euros(priceCents);
+  const globalRow = ws.addRow([...globalCells, ...blanks(nCols - fixed.length - 1), euros(globalCents)]);
+  styleRow(globalRow, nCols, FILL_HEADER, true, 'FFFFFFFF');
+  ws.addRow([]);
+
   ws.addRow([`Un cadeau partagé apparaît sous chaque destinataire ; seule sa part compte dans les sous-totaux. Export du ${new Date().toLocaleDateString('fr-FR')}.`]).font = {
     italic: true,
     color: { argb: 'FF6F6E69' },
