@@ -5,6 +5,13 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* Jamais de défilement horizontal de la page ; « clip » garde l'en-tête sticky,
+       « hidden » sert de repli pour les anciens Safari. */
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+  body {
+    overflow-x: clip;
   }
   body {
     @apply bg-white text-ink antialiased;
